@@ -1,0 +1,84 @@
+---
+title: "training"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## How i built my model
+
+I decided to throw out all variables of the original data except the raw Euler angles and the total acceleration of each measurement device and of course the classes. Also i delted all rows which contained incomplete Data.
+
+I trained the algorithm with the trainingset on 100 trees with the method "random Forest" using all remaining variables (16) on the variable classes
+
+Then i used that algorithm to predict the classes of the testingdataset.
+
+## How i used cross validation
+
+I tested my model using the function finalModel on my Algorithm
+
+## The expected out of sample error
+
+The expected out of the sample error lies under 1%
+
+## Why i made these choices
+
+I decided to concentrate on the raw Euler angels and the total acceleration, because i figured out all the other data should be redunandant to these variables to a good amount. Also i wanted to cut down the variables as far as i can to reduce complexity and to avoid overfitting. The deleting of the incomplete rows was simply made to make my life easier, as i got enough data anyway.
+
+I decided to use the method "randomForest" as it was described in the lecture and somewhat easy to use. The usage of all remaining variables on classes is selfexplaining.
+
+I used finalModel as crossvalidation, as it was easier to use than the crossvalidation algorithm.
+
+## The code
+
+```{r libaries}
+library(dplyr)
+library(caret)
+library(randomForest)
+library(gmodels)
+```
+
+Download files and put them into your wd. Name them training.csv and testing.csv
+
+```{r preprocessing data}
+data<- read.csv("./training.csv",header=T, na.strings = c("NA",""))
+quiz_data<-read.csv("./testing.csv",header=T, na.strings = c("NA",""))
+data<-data[,(colSums(is.na(data)) == 0)]
+quiz_data<-quiz_data[,(colSums(is.na(quiz_data)) == 0)]
+data<-data[, -c(1,2,3,4,5,6,7)]
+quiz_data<-quiz_data[, -c(1,2,3,4,5,6,7)]
+x<-grepl("_x",names(data))
+data<-data[,!x]
+y<-grepl("_y",names(data))
+data<-data[,!y]
+z<-grepl("_z",names(data))
+data<-data[,!z]
+x<-grepl("_x",names(quiz_data))
+quiz_data<-quiz_data[,!x]
+y<-grepl("_y",names(quiz_data))
+quiz_data<-quiz_data[,!y]
+z<-grepl("_z",names(quiz_data))
+quiz_data<-quiz_data[,!z]
+index<-sample(19622,replace=F)
+train<-data[index,]
+```
+
+Now the data is ready for training and prediction
+
+```{r training and testing}
+randFor<-train(classe~.  , data=train, method="rf", ntree=100)
+pred<-predict(randFor, quiz_data)
+```
+
+A quick crossvalidation gives back the error rate:
+
+```{r crossvalidation}
+randFor$finalModel
+```
+
+And finally return result:
+```{r results}
+pred
+```
